@@ -1,20 +1,30 @@
-import React from 'react'
-import {BrowserRouter,Routes,Route} from "react-router-dom"
-import UserLayout from './components/Layout/UserLayout'
-import Home from './pages/Home'
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// Layout
+import UserLayout from './components/layout/UserLayout';
+
+// Pages
+import Home from './pages/Home';
+import ProductListing from './pages/ProductListing';
+import ProductDetail from './pages/ProductDetail';
 
 const App = () => {
   return (
     <div>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<UserLayout/>}>
-            <Route index element={<Home/>}/>
+          {/* All routes inside UserLayout get the Navbar and Footer */}
+          <Route path="/" element={<UserLayout />}>
+            <Route index element={<Home />} />
+            <Route path="products" element={<ProductListing />} />
+            {/* The :id allows dynamic routing for individual products */}
+            <Route path="product/:id" element={<ProductDetail />} />
           </Route>
         </Routes>
       </BrowserRouter>
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
