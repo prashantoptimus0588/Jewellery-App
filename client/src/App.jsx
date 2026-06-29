@@ -8,6 +8,10 @@ import UserLayout from './components/layout/UserLayout';
 import Home from './pages/Home';
 import ProductListing from './pages/ProductListing';
 import ProductDetail from './pages/ProductDetail';
+import AuthModal from './components/auth/AuthModal';
+
+// Auth
+
 
 const App = () => {
   return (
@@ -23,6 +27,8 @@ const App = () => {
           </Route>
         </Routes>
       </BrowserRouter>
+      
+      <AuthModal/>
     </div>
   );
 };
