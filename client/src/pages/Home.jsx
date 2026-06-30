@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Hero from '../components/Layout/Hero';
+import Hero from '../components/layout/Hero';
 import { FaArrowRight } from 'react-icons/fa';
 
 // --- Dummy Data ---

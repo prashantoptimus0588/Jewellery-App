@@ -1,22 +1,55 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaSearch, FaCameraRetro, FaMicrophoneAlt, FaCartPlus, FaStar, FaUser, FaHeart } from "react-icons/fa";
 import brandLogo from '../../assets/VJ Logo.png';
-import { useState } from 'react';
 import CartDrawer from '../cart/CartDrawer';
-import useCartStore from '../../store/usecartStore';
+import useCartStore from '../../store/useCartStore';
 import useAuthStore from '../../store/useAuthStore';
 
+const categories = [
+  {
+    name: 'All Jewellery',
+    items: ['New Arrivals', 'Best Sellers', 'Gift Finder'],
+  },
+  {
+    name: 'Gold',
+    items: ['Gold Rings', 'Gold Chains', 'Gold Bangles', 'Gold Earrings'],
+  },
+  {
+    name: 'Diamond',
+    items: ['Diamond Rings', 'Diamond Earrings', 'Diamond Pendants'],
+  },
+  {
+    name: 'Earrings',
+    items: ['Studs', 'Hoops', 'Jhumkas', 'Drop Earrings'],
+  },
+  {
+    name: 'Rings',
+    items: ['Engagement Rings', 'Couple Rings', 'Cocktail Rings'],
+  },
+  {
+    name: 'Daily Wear',
+    items: ['Lightweight Gold', 'Minimal Studs', 'Everyday Chains'],
+  },
+  {
+    name: 'Wedding',
+    items: ['Bridal Sets', 'Mangalsutra', 'Wedding Bands'],
+  },
+  {
+    name: 'Gifting',
+    items: ['Under ₹10,000', 'Anniversary Gifts', 'Gift Cards'],
+  },
+];
 
 const Header = () => {
   const [cartOpen, setCartOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
   const totalItems = useCartStore((s) => s.totalItems());
   const { openAuthModal, isAuthenticated, user } = useAuthStore();
+
   return (
-
-
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      
+
       {/* Top Utility Bar */}
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
 
@@ -45,26 +78,25 @@ const Header = () => {
 
         {/* Action Icons */}
         <div className="flex items-center gap-6 text-gray-600">
-          
-          {/* New/Featured */}
+
           <button className="hover:text-[#832729] transition-colors">
             <FaStar className="w-5 h-5" />
           </button>
 
-          {/* Wishlist */}
-          <button className="hover:text-[#832729] transition-colors">
+          <Link to="/profile" className="hover:text-[#832729] transition-colors">
             <FaHeart className="w-5 h-5" />
+          </Link>
+
+          <button onClick={isAuthenticated ? undefined : openAuthModal} className="hover:text-[#832729] transition-colors">
+            {isAuthenticated ? (
+              <Link to="/profile" className="text-xs font-medium text-[#832729]">
+                {user.name.split(' ')[0]}
+              </Link>
+            ) : (
+              <FaUser className="w-5 h-5" />
+            )}
           </button>
 
-          {/* Profile */}
-          <button onClick={openAuthModal} className="hover:text-[#832729] transition-colors">
-            {isAuthenticated
-              ? <span className="text-xs font-medium text-[#832729]">{user.name.split(' ')[0]}</span>
-              : <FaUser className="w-5 h-5" />
-            }
-          </button>
-
-          {/* Cart with Badge */}
           <button onClick={() => setCartOpen(true)} className="relative hover:text-[#832729] transition-colors">
             <FaCartPlus className="w-5 h-5" />
             {totalItems > 0 && (
@@ -76,16 +108,49 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Category Nav */}
-      <nav className="container mx-auto px-6 py-3 border-t border-gray-100 overflow-x-auto">
+      {/* Category Nav with Hover Dropdown */}
+      <nav
+        className="container mx-auto px-6 py-3 border-t border-gray-100 overflow-x-auto relative"
+        onMouseLeave={() => setActiveCategory(null)}
+      >
         <ul className="flex items-center justify-center gap-10 text-[15px] font-medium text-gray-700 whitespace-nowrap">
-          {['All Jewellery', 'Gold', 'Diamond', 'Earrings', 'Rings', 'Daily Wear', 'Wedding', 'Gifting'].map((item) => (
-            <li key={item} className="hover:text-[#832729] cursor-pointer transition-colors">
-              {item}
+          {categories.map((cat) => (
+            <li
+              key={cat.name}
+              onMouseEnter={() => setActiveCategory(cat.name)}
+              className="relative"
+            >
+              <Link
+                to={`/products?category=${encodeURIComponent(cat.name)}`}
+                className="hover:text-[#832729] cursor-pointer transition-colors"
+              >
+                {cat.name}
+              </Link>
             </li>
           ))}
         </ul>
+
+        {/* Dropdown Panel */}
+        {activeCategory && (
+          <div className="absolute left-0 right-0 top-full bg-white border-t border-gray-100 shadow-lg z-40">
+            <div className="container mx-auto px-6 py-6 flex justify-center gap-16">
+              {categories
+                .find((c) => c.name === activeCategory)
+                ?.items.map((sub) => (
+                  <Link
+                    key={sub}
+                    to={`/products?category=${encodeURIComponent(activeCategory)}&sub=${encodeURIComponent(sub)}`}
+                    className="text-sm text-gray-600 hover:text-[#832729] transition-colors"
+                  >
+                    {sub}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        )}
       </nav>
+
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
     </header>
   );
