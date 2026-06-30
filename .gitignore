@@ -33,6 +33,10 @@ server/uploads/
 *.db
 *.db-journal
 
+# Prisma generated client
+server/src/generated/
+
+
 # -----------------------------
 # OS Generated Files
 # -----------------------------

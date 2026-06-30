@@ -1,13 +1,22 @@
-const express = require('express'); // Import express
-const app = express();              // Initialize the app
-const PORT = 3000;                  // Define the port
+require('dotenv').config();
 
-// Define a route for the home page
-app.get('/', (req, res) => {
-    res.send('Hello, World! This is an Express server.');
+const express = require('express');
+const cors = require('cors');
+
+const authRoutes=require('./src/routes/authRoutes')
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
-// Start listening for requests
+app.use('/api/auth',authRoutes);
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Express server running at http://localhost:${PORT}/`);
+  console.log(`Server running on port ${PORT}`);
 });

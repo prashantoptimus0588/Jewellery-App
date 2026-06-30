@@ -1,0 +1,248 @@
+// ---------------------------------------------------------
+// Vikas Jewellers — Prisma schema
+// DB: PostgreSQL (+ pgvector extension for RAG embeddings)
+// ---------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+
+  extensions = [pgvector(map: "vector")]
+}
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum AuthProvider {
+  OTP
+  GOOGLE
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum Metal {
+  YELLOW_GOLD
+  ROSE_GOLD
+  WHITE_GOLD
+  PLATINUM
+}
+
+// ---------------------------------------------------------
+// USER + AUTH
+// ---------------------------------------------------------
+
+model User {
+  id            String       @id @default(cuid())
+  name          String
+  email         String       @unique
+  phone         String?      @unique
+  avatar        String?
+  role          Role         @default(CUSTOMER)
+  provider      AuthProvider @default(OTP)
+  googleId      String?      @unique
+
+  addresses     Address[]
+  orders        Order[]
+  wishlist      WishlistItem[]
+  cart          CartItem[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// Short-lived OTP codes for phone/email login. Cleared/expired rows can be
+// swept by a cron job or just filtered out by `expiresAt` in queries.
+model OtpCode {
+  id        String   @id @default(cuid())
+  identifier String  // email or phone the OTP was sent to
+  code      String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([identifier])
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+
+  label        String?  // "Home", "Work", etc.
+  fullName     String
+  phone        String
+  line1        String
+  line2        String?
+  city         String
+  state        String
+  pincode      String
+  country      String   @default("India")
+  isDefault    Boolean  @default(false)
+
+  orders       Order[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ---------------------------------------------------------
+// CATALOG
+// ---------------------------------------------------------
+
+// Self-referencing so the Header's top-level categories ("Rings", "Gold")
+// and their dropdown sub-items ("Cocktail Rings", "Gold Bangles") are both
+// rows here, keyed by slug — matches the ?category=slug&sub=slug URL pattern.
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+
+  parent    Category?  @relation("CategoryToSub", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  children  Category[] @relation("CategoryToSub")
+
+  products  Product[]
+
+  createdAt DateTime   @default(now())
+}
+
+model Product {
+  id            String     @id @default(cuid())
+  name          String
+  slug          String     @unique
+  description   String
+  price         Int        // store in paise/rupees as integer to avoid float issues
+  purity        String?    // e.g. "22 Karat"
+  weight        String?    // e.g. "4.50 g"
+  metal         Metal?
+  stock         Int        @default(1)
+  tag           String?    // "Best Seller", "New Arrival", "Only X left!"
+
+  category      Category   @relation(fields: [categoryId], references: [id])
+  categoryId    String
+
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  wishlistedBy  WishlistItem[]
+  cartedBy      CartItem[]
+  embedding     ProductEmbedding?
+
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([categoryId])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  url       String
+  position  Int      @default(0)
+}
+
+// For the RAG chatbot: one embedding row per product (or chunk, if you later
+// embed long descriptions in pieces — for now, 1:1 with Product is enough).
+// Dimension 768 matches Google's text-embedding-004; adjust if you swap models.
+model ProductEmbedding {
+  id        String                      @id @default(cuid())
+  product   Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String                      @unique
+  content   String                      // the text that was embedded (name + desc + specs)
+  embedding Unsupported("vector(768)")
+
+  createdAt DateTime                    @default(now())
+  updatedAt DateTime                    @updatedAt
+}
+
+// ---------------------------------------------------------
+// CART / WISHLIST
+// ---------------------------------------------------------
+
+model CartItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  size      String?
+  quantity  Int      @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId, size])
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// ---------------------------------------------------------
+// ORDERS
+// ---------------------------------------------------------
+
+model Order {
+  id            String      @id @default(cuid())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+
+  address       Address     @relation(fields: [addressId], references: [id])
+  addressId     String
+
+  items         OrderItem[]
+  status        OrderStatus @default(PENDING)
+  totalAmount   Int
+
+  paymentId     String?     // gateway reference, e.g. Razorpay payment id
+  paymentMethod String?
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String
+
+  // Snapshot fields: price/name at time of purchase, so later edits to the
+  // Product (price changes, renames) never retroactively alter past orders.
+  name        String
+  price       Int
+  size        String?
+  quantity    Int
+
+  @@index([orderId])
+}
