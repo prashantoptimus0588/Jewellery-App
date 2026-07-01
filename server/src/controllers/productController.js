@@ -1,19 +1,17 @@
 // server/src/controllers/productController.js
 const prisma = require('../lib/prisma');
 
-// GET /api/products?category=slug&sub=slug&page=1&limit=12
 const getProducts = async (req, res) => {
   try {
-    const { category, sub, page = 1, limit = 12 } = req.query;
+    const { category, sub, page = 1, limit = 12, minPrice, maxPrice, metals, sort } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
+    // Category filter
     let categoryFilter = {};
-
     if (sub) {
       const subCat = await prisma.category.findUnique({ where: { slug: sub } });
       if (subCat) categoryFilter = { categoryId: subCat.id };
     } else if (category) {
-      // include parent + all its children
       const parent = await prisma.category.findUnique({
         where: { slug: category },
         include: { children: true },
@@ -24,17 +22,43 @@ const getProducts = async (req, res) => {
       }
     }
 
+    // Price filter
+    let priceFilter = {};
+    if (minPrice != null || maxPrice != null) {
+      priceFilter.price = {};
+      if (minPrice != null) priceFilter.price.gte = parseInt(minPrice);
+      if (maxPrice != null) priceFilter.price.lte = parseInt(maxPrice);
+    }
+
+    // Metal filter
+    let metalFilter = {};
+    if (metals) {
+      const metalList = metals.split(',').map((m) => m.trim().toUpperCase().replace(' ', '_'));
+      metalFilter = { metal: { in: metalList } };
+    }
+
+    // Sort
+    let orderBy = { createdAt: 'desc' };
+    if (sort === 'price_asc') orderBy = { price: 'asc' };
+    if (sort === 'price_desc') orderBy = { price: 'desc' };
+    if (sort === 'newest') orderBy = { createdAt: 'desc' };
+
+    const where = {
+      isActive: true,
+      ...categoryFilter,
+      ...priceFilter,
+      ...metalFilter,
+    };
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where: { isActive: true, ...categoryFilter },
+        where,
         include: { images: { orderBy: { position: 'asc' } } },
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: parseInt(limit),
       }),
-      prisma.product.count({
-        where: { isActive: true, ...categoryFilter },
-      }),
+      prisma.product.count({ where }),
     ]);
 
     res.json({
@@ -49,8 +73,7 @@ const getProducts = async (req, res) => {
   }
 };
 
-// GET /api/products/:slug
-const getProductById = async (req, res) => {
+const getProductBySlug = async (req, res) => {
   try {
     const product = await prisma.product.findUnique({
       where: { slug: req.params.slug },
@@ -59,11 +82,9 @@ const getProductById = async (req, res) => {
         category: { include: { parent: true } },
       },
     });
-
     if (!product || !product.isActive) {
       return res.status(404).json({ error: 'Product not found' });
     }
-
     res.json({ product });
   } catch (err) {
     console.error(err);
@@ -71,4 +92,4 @@ const getProductById = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductById };
+module.exports = { getProducts, getProductBySlug };
