@@ -1,5 +1,7 @@
+// src/components/auth/LoginForm.jsx
 import React, { useState } from 'react';
 import useAuthStore from '../../store/useAuthStore';
+import { sendOtpApi } from '../../services/authService';
 
 const LoginForm = () => {
   const { setAuthMode, setOtpEmail } = useAuthStore();
@@ -12,17 +14,17 @@ const LoginForm = () => {
       setError('Please enter a valid email address.');
       return;
     }
-
     setLoading(true);
     setError('');
-
-    // TODO: Call POST /api/auth/send-otp with email
-    // For now simulating API delay
-    await new Promise((res) => setTimeout(res, 1000));
-
-    setOtpEmail(email);
-    setAuthMode('otp');
-    setLoading(false);
+    try {
+      await sendOtpApi(email);
+      setOtpEmail(email);
+      setAuthMode('otp');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,17 +36,13 @@ const LoginForm = () => {
         <input
           type="email"
           value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setError('');
-          }}
+          onChange={(e) => { setEmail(e.target.value); setError(''); }}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder="you@example.com"
           className="w-full border border-gray-200 rounded-sm px-4 py-3 text-sm outline-none focus:border-[#832729] transition-colors"
         />
         {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
       </div>
-
       <button
         onClick={handleSubmit}
         disabled={loading}

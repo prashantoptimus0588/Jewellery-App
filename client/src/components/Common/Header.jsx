@@ -90,7 +90,7 @@ const Header = () => {
           <button onClick={isAuthenticated ? undefined : openAuthModal} className="hover:text-[#832729] transition-colors">
             {isAuthenticated ? (
               <Link to="/profile" className="text-xs font-medium text-[#832729]">
-                {user.name.split(' ')[0]}
+                {user?.name.split(' ')[0]}
               </Link>
             ) : (
               <FaUser className="w-5 h-5" />
