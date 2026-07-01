@@ -6,7 +6,7 @@ import { fetchProductBySlug } from '../services/productService';
 import useCartStore from '../store/useCartStore';
 
 const ProductDetail = () => {
-  const { id: slug } = useParams(); // route is /product/:id but we pass slug
+  const { slug } = useParams(); // route is /product/:id but we pass slug
   const addItem = useCartStore((s) => s.addItem);
 
   const [product, setProduct] = useState(null);
@@ -176,7 +176,7 @@ const ProductDetail = () => {
               <span className="text-xs font-medium">100% Certified<br />Jewellery</span>
             </div>
             <div className="flex flex-col items-center text-center gap-2 text-gray-600 border-x border-gray-200">
-              <FaShieldAlt className="w-7 h-7 text-[#832729]/80" />
+              <FaShield className="w-7 h-7 text-[#832729]/80" />
               <span className="text-xs font-medium">Lifetime<br />Exchange</span>
             </div>
             <div className="flex flex-col items-center text-center gap-2 text-gray-600">

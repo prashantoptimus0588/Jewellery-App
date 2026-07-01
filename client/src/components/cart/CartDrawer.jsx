@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 import { FaXmark } from 'react-icons/fa6';
 import useCartStore from '../../store/useCartStore';
 import CartItem from './CartItem';
+import useAuthStore from '../../store/useAuthStore';
+
+
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const items = useCartStore((s) => s.items);
   const totalPrice = useCartStore((s) => s.totalPrice());
+  const { isAuthenticated, openAuthModal } = useAuthStore();
 
   return (
     <>
@@ -56,13 +60,22 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 ₹ {totalPrice.toLocaleString('en-IN')}
               </span>
             </div>
-            <Link
-              to="/checkout"
-              onClick={onClose}
-              className="block w-full text-center bg-[#832729] text-white font-medium py-4 rounded-sm hover:bg-[#6a1f21] transition-colors"
-            >
-              Proceed to Checkout
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/checkout"
+                onClick={onClose}
+                className="block w-full text-center bg-[#832729] text-white font-medium py-4 rounded-sm hover:bg-[#6a1f21] transition-colors"
+              >
+                Proceed to Checkout
+              </Link>
+            ) : (
+              <button
+                onClick={() => { onClose(); openAuthModal(); }}
+                className="w-full text-center bg-[#832729] text-white font-medium py-4 rounded-sm hover:bg-[#6a1f21] transition-colors"
+              >
+                Login to Checkout
+              </button>
+            )}
           </div>
         )}
       </div>

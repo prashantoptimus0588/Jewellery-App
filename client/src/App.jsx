@@ -14,15 +14,17 @@ import Profile from './pages/Profile';
 
 // Auth
 import AuthModal from './components/auth/AuthModal';
+import AuthCallback from './pages/AuthCallback';
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Home />} />
           <Route path="products" element={<ProductListing />} />
-          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="product/:slug" element={<ProductDetail />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="orders" element={<Orders />} />
           <Route path="profile" element={<Profile />} />

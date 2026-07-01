@@ -10,11 +10,7 @@ const AuthModal = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleGoogleLogin = () => {
-    // TODO: redirect to GET /api/auth/google
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
-  };
-
+  
   return (
     <>
       {/* Backdrop */}
@@ -24,8 +20,10 @@ const AuthModal = () => {
       />
 
       {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm bg-white rounded-sm shadow-2xl p-8">
-
+      <div 
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] w-full max-w-sm bg-white rounded-sm shadow-2xl p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close */}
         <button
           onClick={closeAuthModal}
@@ -55,7 +53,7 @@ const AuthModal = () => {
               <span className="text-xs text-gray-400">or</span>
               <div className="flex-grow h-px bg-gray-100" />
             </div>
-            <GoogleButton onClick={handleGoogleLogin} />
+            <GoogleButton/>
           </div>
         ) : (
           <OtpModal />

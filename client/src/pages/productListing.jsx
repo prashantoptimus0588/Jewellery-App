@@ -1,8 +1,23 @@
 // src/pages/ProductListing.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FaRegHeart, FaHeart, FaChevronDown, FaFilter } from 'react-icons/fa6';
+import { FaRegHeart, FaHeart, FaChevronDown, FaFilter, FaXmark } from 'react-icons/fa6';
 import { fetchProducts } from '../services/productService';
+
+const PRICE_RANGES = [
+  { label: 'Under ₹ 25,000', min: 0, max: 25000 },
+  { label: '₹ 25,000 - ₹ 50,000', min: 25000, max: 50000 },
+  { label: '₹ 50,000 - ₹ 1,00,000', min: 50000, max: 100000 },
+  { label: 'Over ₹ 1,00,000', min: 100000, max: null },
+];
+
+const METALS = ['Yellow Gold', 'Rose Gold', 'White Gold', 'Platinum'];
+
+const SORT_OPTIONS = [
+  { label: 'Best Matches', value: 'newest' },
+  { label: 'Price: Low to High', value: 'price_asc' },
+  { label: 'Price: High to Low', value: 'price_desc' },
+];
 
 const ProductListing = () => {
   const [searchParams] = useSearchParams();
@@ -16,12 +31,26 @@ const ProductListing = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [wishlist, setWishlist] = useState([]);
 
+  // Filter state
+  const [selectedPrice, setSelectedPrice] = useState(null); // index into PRICE_RANGES
+  const [selectedMetals, setSelectedMetals] = useState([]);
+  const [sort, setSort] = useState('newest');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       setError('');
       try {
-        const data = await fetchProducts({ category, sub });
+        const priceRange = selectedPrice != null ? PRICE_RANGES[selectedPrice] : {};
+        const data = await fetchProducts({
+          category,
+          sub,
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
+          metals: selectedMetals,
+          sort,
+        });
         setProducts(data.products);
         setTotal(data.total);
       } catch (err) {
@@ -31,14 +60,27 @@ const ProductListing = () => {
       }
     };
     load();
-  }, [category, sub]);
+  }, [category, sub, selectedPrice, selectedMetals, sort]);
+
+  const toggleMetal = (metal) =>
+    setSelectedMetals((prev) =>
+      prev.includes(metal) ? prev.filter((m) => m !== metal) : [...prev, metal]
+    );
 
   const toggleWishlist = (id) =>
     setWishlist((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
 
+  const clearFilters = () => {
+    setSelectedPrice(null);
+    setSelectedMetals([]);
+    setSort('newest');
+  };
+
+  const hasActiveFilters = selectedPrice != null || selectedMetals.length > 0;
   const pageTitle = sub || category || 'All Jewellery';
+  const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label;
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -62,69 +104,119 @@ const ProductListing = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-serif text-gray-900 capitalize">
           {pageTitle}{' '}
-          <span className="text-lg text-gray-500 font-sans font-normal">
-            ({total} results)
-          </span>
+          <span className="text-lg text-gray-500 font-sans font-normal">({total} results)</span>
         </h1>
+
         <div className="flex items-center gap-4 w-full md:w-auto justify-between">
           <button
             className="md:hidden flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md text-sm font-medium"
             onClick={() => setShowFilters(!showFilters)}
           >
-            <FaFilter /> Filter
+            <FaFilter /> Filter {hasActiveFilters && <span className="bg-[#832729] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{(selectedPrice != null ? 1 : 0) + selectedMetals.length}</span>}
           </button>
-          <div className="flex items-center gap-2 text-sm border border-gray-300 px-4 py-2 rounded-full cursor-pointer hover:border-[#832729] transition-colors">
-            <span className="text-gray-500">Sort By:</span>
-            <span className="font-semibold text-gray-900">Best Matches</span>
-            <FaChevronDown className="text-gray-400 ml-1" />
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <div
+              onClick={() => setShowSortMenu(!showSortMenu)}
+              className="flex items-center gap-2 text-sm border border-gray-300 px-4 py-2 rounded-full cursor-pointer hover:border-[#832729] transition-colors"
+            >
+              <span className="text-gray-500">Sort By:</span>
+              <span className="font-semibold text-gray-900">{currentSortLabel}</span>
+              <FaChevronDown className={`text-gray-400 ml-1 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
+            </div>
+            {showSortMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-sm shadow-lg z-30 w-52">
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setSort(opt.value); setShowSortMenu(false); }}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                      sort === opt.value ? 'text-[#832729] bg-[#832729]/5 font-medium' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Active filter pills */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {selectedPrice != null && (
+            <span className="flex items-center gap-2 text-xs bg-[#832729]/10 text-[#832729] px-3 py-1.5 rounded-full font-medium">
+              {PRICE_RANGES[selectedPrice].label}
+              <button onClick={() => setSelectedPrice(null)}><FaXmark className="w-3 h-3" /></button>
+            </span>
+          )}
+          {selectedMetals.map((m) => (
+            <span key={m} className="flex items-center gap-2 text-xs bg-[#832729]/10 text-[#832729] px-3 py-1.5 rounded-full font-medium">
+              {m}
+              <button onClick={() => toggleMetal(m)}><FaXmark className="w-3 h-3" /></button>
+            </span>
+          ))}
+          <button onClick={clearFilters} className="text-xs text-gray-400 underline ml-1">
+            Clear all
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-10">
 
-        {/* Sidebar Filters */}
+        {/* Sidebar */}
         <aside className={`w-full md:w-1/4 lg:w-1/5 ${showFilters ? 'block' : 'hidden md:block'}`}>
+
+          {/* Price */}
           <div className="border-b border-gray-200 pb-6 mb-6">
             <h3 className="font-serif text-lg mb-4 text-gray-800">Price</h3>
             <div className="space-y-3 text-sm text-gray-600">
-              {['Under ₹ 25,000', '₹ 25,000 - ₹ 50,000', '₹ 50,000 - ₹ 1,00,000', 'Over ₹ 1,00,000'].map((label) => (
-                <label key={label} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-[#832729]" />
-                  {label}
+              {PRICE_RANGES.map((range, i) => (
+                <label key={range.label} className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price"
+                    checked={selectedPrice === i}
+                    onChange={() => setSelectedPrice(selectedPrice === i ? null : i)}
+                    onClick={() => { if (selectedPrice === i) setSelectedPrice(null); }}
+                    className="w-4 h-4 accent-[#832729]"
+                  />
+                  {range.label}
                 </label>
               ))}
             </div>
           </div>
 
-          <div className="border-b border-gray-200 pb-6 mb-6">
-            <h3 className="font-serif text-lg mb-4 text-gray-800">Category</h3>
-            <div className="space-y-3 text-sm text-gray-600">
-              {['Rings', 'Earrings', 'Necklaces', 'Bangles', 'Pendants'].map((cat) => (
-                <label key={cat} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-[#832729]" />
-                  {cat}
-                </label>
-              ))}
-            </div>
-          </div>
-
+          {/* Metal */}
           <div className="pb-6">
             <h3 className="font-serif text-lg mb-4 text-gray-800">Metal</h3>
             <div className="space-y-3 text-sm text-gray-600">
-              {['Yellow Gold', 'Rose Gold', 'White Gold', 'Platinum'].map((metal) => (
+              {METALS.map((metal) => (
                 <label key={metal} className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 accent-[#832729]" />
+                  <input
+                    type="checkbox"
+                    checked={selectedMetals.includes(metal)}
+                    onChange={() => toggleMetal(metal)}
+                    className="w-4 h-4 accent-[#832729]"
+                  />
                   {metal}
                 </label>
               ))}
             </div>
           </div>
+
+          {hasActiveFilters && (
+            <button onClick={clearFilters} className="text-sm text-[#832729] underline font-medium">
+              Clear all filters
+            </button>
+          )}
         </aside>
 
-        {/* Product Grid */}
+        {/* Grid */}
         <main className="w-full md:w-3/4 lg:w-4/5">
-
           {loading && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -137,12 +229,17 @@ const ProductListing = () => {
             </div>
           )}
 
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
           {!loading && !error && products.length === 0 && (
-            <p className="text-gray-400 font-serif text-lg">No products found.</p>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <p className="text-gray-400 font-serif text-lg mb-3">No products found</p>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-sm text-[#832729] underline">
+                  Clear filters
+                </button>
+              )}
+            </div>
           )}
 
           {!loading && !error && products.length > 0 && (
