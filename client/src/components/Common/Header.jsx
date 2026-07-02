@@ -5,6 +5,7 @@ import brandLogo from '../../assets/VJ Logo.png';
 import CartDrawer from '../cart/CartDrawer';
 import useCartStore from '../../store/useCartStore';
 import useAuthStore from '../../store/useAuthStore';
+import useWishlistStore from '../../store/useWishlistStore';
 
 const categories = [
   { name: 'All Jewellery', slug: 'all-jewellery', items: [{ label: 'New Arrivals', slug: 'new-arrivals' }, { label: 'Best Sellers', slug: 'best-sellers' }, { label: 'Gift Finder', slug: 'gift-finder' }] },
@@ -23,6 +24,7 @@ const Header = () => {
   const leaveTimer = useRef(null);
   const totalItems = useCartStore((s) => s.totalItems());
   const { openAuthModal, isAuthenticated, user } = useAuthStore();
+  const { ids: wishlistIds } = useWishlistStore();
 
   const handleMouseEnter = (catName) => {
     clearTimeout(leaveTimer.current);
@@ -64,8 +66,13 @@ const Header = () => {
           </button>
 
           {/* Wishlist */}
-          <Link to="/profile" className="hover:text-[#832729] transition-colors">
+          <Link to="/profile" className="relative hover:text-[#832729] transition-colors">
             <FaHeart className="w-5 h-5" />
+            {wishlistIds.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-[#832729] text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                {wishlistIds.length}
+              </span>
+            )}
           </Link>
 
           {/* Profile */}

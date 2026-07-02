@@ -4,6 +4,9 @@ import { useParams, Link } from 'react-router-dom';
 import { FaRegHeart, FaHeart, FaTruck, FaShield, FaCertificate } from 'react-icons/fa6';
 import { fetchProductBySlug } from '../services/productService';
 import useCartStore from '../store/useCartStore';
+import useWishlistStore from '../store/useWishlistStore';
+import useAuthStore from '../store/useAuthStore';
+
 
 const ProductDetail = () => {
   const { slug } = useParams(); // route is /product/:id but we pass slug
@@ -13,7 +16,8 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mainImage, setMainImage] = useState('');
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { ids: wishlistIds, toggle: toggleWishlist } = useWishlistStore();
+  const { isAuthenticated } = useAuthStore();
   const [ringSize, setRingSize] = useState('12');
 
   useEffect(() => {
@@ -93,10 +97,10 @@ const ProductDetail = () => {
 
           <div className="flex-grow bg-[#f9f9f9] rounded-sm relative h-[480px]">
             <button
-              onClick={() => setIsWishlisted(!isWishlisted)}
+              onClick={() => toggleWishlist(product.id, isAuthenticated)}
               className="absolute top-4 right-4 z-10 p-2 bg-white rounded-full shadow-sm text-gray-400 hover:text-[#832729] transition-colors"
             >
-              {isWishlisted
+              {wishlistIds.includes(product.id)
                 ? <FaHeart className="w-5 h-5 text-[#832729]" />
                 : <FaRegHeart className="w-5 h-5" />}
             </button>
