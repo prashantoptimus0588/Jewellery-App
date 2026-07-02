@@ -17,27 +17,30 @@ const useAuthStore = create((set) => ({
 
   login: (userData, token) => {
     localStorage.setItem('vj_token', token);
-    set({
-      user: userData,
-      token,
-      isAuthenticated: true,
-      isAuthModalOpen: false,
-      otpEmail: '',
+    set({ user: userData, token, isAuthenticated: true, isAuthModalOpen: false, otpEmail: '' });
+    // Load wishlist from DB on login
+    import('../store/useWishlistStore').then(({ default: useWishlistStore }) => {
+      useWishlistStore.getState().load();
     });
   },
 
   logout: () => {
     localStorage.removeItem('vj_token');
+    import('../store/useWishlistStore').then(({ default: useWishlistStore }) => {
+      useWishlistStore.getState().clear();
+    });
     set({ user: null, token: null, isAuthenticated: false });
   },
 
-  // Call on app mount to rehydrate user from saved token
   rehydrate: async () => {
     const token = localStorage.getItem('vj_token');
     if (!token) return;
     try {
       const { user } = await getMeApi(token);
       set({ user, token, isAuthenticated: true });
+      // Load wishlist on rehydrate too
+      const { default: useWishlistStore } = await import('../store/useWishlistStore');
+      useWishlistStore.getState().load();
     } catch {
       localStorage.removeItem('vj_token');
       set({ user: null, token: null, isAuthenticated: false });

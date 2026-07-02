@@ -13,17 +13,19 @@ const AuthModal = () => {
   
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
-        onClick={closeAuthModal}
-      />
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+          style={{ zIndex: 50 }}
+          onClick={closeAuthModal}
+        />
 
-      {/* Modal */}
-      <div 
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] w-full max-w-sm bg-white rounded-sm shadow-2xl p-8"
-        onClick={(e) => e.stopPropagation()}
-      >
+        {/* Modal */}
+        <div
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-white rounded-sm shadow-2xl p-8"
+          style={{ zIndex: 60 }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Close */}
         <button
           onClick={closeAuthModal}

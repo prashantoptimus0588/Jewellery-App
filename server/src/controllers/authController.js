@@ -91,7 +91,20 @@ const googleAuth = async (req, res) => {
 
 // GET /api/auth/me
 const getMe = async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      avatar: true,
+      role: true,
+      provider: true,
+      createdAt: true,
+    },
+  });
+  if (!user) return res.status(404).json({ error: 'User not found' });
   res.json({ user });
 };
 
