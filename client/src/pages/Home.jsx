@@ -1,21 +1,18 @@
-import React from 'react';
+// src/pages/Home.jsx
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Hero from '../components/layout/Hero';
-import { FaArrowRight } from 'react-icons/fa';
+import { FaArrowRight, FaHeart, FaRegHeart } from 'react-icons/fa6';
+import { fetchProducts } from '../services/productService';
+import useWishlistStore from '../store/useWishlistStore';
+import useAuthStore from '../store/useAuthStore';
 
-// --- Dummy Data ---
+// --- Static Data (categories use real slugs, images stay static) ---
 const categories = [
-  { id: 1, name: 'Rings', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=800', link: '/products?category=rings' },
-  { id: 2, name: 'Earrings', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800', link: '/products?category=earrings' },
-  { id: 3, name: 'Necklaces', image: 'https://images.unsplash.com/photo-1599643478524-fb66f7ca066b?q=80&w=800', link: '/products?category=necklaces' },
-  { id: 4, name: 'Bangles', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800', link: '/products?category=bangles' },
-];
-
-const featuredProducts = [
-  { id: 1, name: 'Bloom Bud Gold Ring', price: 66174, tag: 'Bestseller', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=800' },
-  { id: 2, name: 'Kundan Drop Earrings', price: 48200, tag: 'New', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800' },
-  { id: 3, name: 'Diamond Aura Pendant', price: 124500, tag: 'Premium', image: 'https://images.unsplash.com/photo-1599643478524-fb66f7ca066b?q=80&w=800' },
-  { id: 4, name: 'Gold Twist Bangle', price: 38900, tag: 'New', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800' },
+  { name: 'Rings', slug: 'rings', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=800' },
+  { name: 'Earrings', slug: 'earrings', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800' },
+  { name: 'Necklaces', slug: 'diamond', image: 'https://images.unsplash.com/photo-1599643478524-fb66f7ca066b?q=80&w=800' },
+  { name: 'Bangles', slug: 'gold', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800' },
 ];
 
 const trustPoints = [
@@ -25,13 +22,12 @@ const trustPoints = [
   { icon: '🔒', title: 'Secure Payments', desc: 'Razorpay secured 100% safe checkout' },
 ];
 
-// --- Reusable Section Header ---
 const SectionHeader = ({ title, subtitle, link, linkText }) => (
   <div className="flex items-end justify-between mb-10">
     <div>
       <h2 className="text-3xl font-serif text-gray-900 mb-2">{title}</h2>
       {subtitle && <p className="text-gray-500 text-sm">{subtitle}</p>}
-      <div className="w-12 h-0.5 bg-[#832729] mt-3"></div>
+      <div className="w-12 h-0.5 bg-[#832729] mt-3" />
     </div>
     {link && (
       <Link to={link} className="flex items-center gap-2 text-sm font-medium text-[#832729] hover:gap-3 transition-all">
@@ -41,28 +37,27 @@ const SectionHeader = ({ title, subtitle, link, linkText }) => (
   </div>
 );
 
-// --- Product Card ---
-const ProductCard = ({ product }) => (
-  <Link to={`/products/${product.id}`} className="group">
-    <div className="relative overflow-hidden rounded-sm bg-[#f9f9f9] aspect-square mb-3">
-      {product.tag && (
-        <span className="absolute top-3 left-3 z-10 bg-[#832729] text-white text-[10px] font-semibold px-2 py-1 rounded-sm tracking-wide">
-          {product.tag}
-        </span>
-      )}
-      <img
-        src={product.image}
-        alt={product.name}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-      />
-    </div>
-    <p className="text-sm font-medium text-gray-800 group-hover:text-[#832729] transition-colors">{product.name}</p>
-    <p className="text-sm text-gray-500 mt-1">₹ {product.price.toLocaleString('en-IN')}</p>
-  </Link>
-);
-
-// --- Main Home Page ---
 const Home = () => {
+  const [featured, setFeatured] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [loadingFeatured, setLoadingFeatured] = useState(true);
+  const [loadingNew, setLoadingNew] = useState(true);
+
+  const { ids: wishlistIds, toggle: toggleWishlist } = useWishlistStore();
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    // Fetch best sellers
+    fetchProducts({ sort: 'newest', limit: 4 })
+      .then((data) => setFeatured(data.products))
+      .finally(() => setLoadingFeatured(false));
+
+    // Fetch new arrivals (price asc for variety)
+    fetchProducts({ sort: 'price_asc', limit: 4 })
+      .then((data) => setNewArrivals(data.products))
+      .finally(() => setLoadingNew(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-20 pb-20">
 
@@ -73,7 +68,11 @@ const Home = () => {
         <SectionHeader title="Shop by Category" subtitle="Find the perfect piece for every occasion" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {categories.map((cat) => (
-            <Link key={cat.id} to={cat.link} className="group relative overflow-hidden rounded-sm aspect-[3/4]">
+            <Link
+              key={cat.slug}
+              to={`/products?category=${cat.slug}`}
+              className="group relative overflow-hidden rounded-sm aspect-[3/4]"
+            >
               <img
                 src={cat.image}
                 alt={cat.name}
@@ -88,7 +87,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Collection */}
       <section className="container mx-auto px-6">
         <SectionHeader
           title="Featured Collection"
@@ -96,14 +95,63 @@ const Home = () => {
           link="/products"
           linkText="View All"
         />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {loadingFeatured ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-100 rounded-sm aspect-square mb-3" />
+                <div className="h-4 bg-gray-100 rounded mb-2 w-3/4" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {featured.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                isWishlisted={wishlistIds.includes(product.id)}
+                onWishlist={() => toggleWishlist(product.id, isAuthenticated)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Banner */}
+      {/* New Arrivals */}
+      <section className="container mx-auto px-6">
+        <SectionHeader
+          title="New Arrivals"
+          subtitle="Fresh additions to our collection"
+          link="/products?sort=newest"
+          linkText="See More"
+        />
+        {loadingNew ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-100 rounded-sm aspect-square mb-3" />
+                <div className="h-4 bg-gray-100 rounded mb-2 w-3/4" />
+                <div className="h-3 bg-gray-100 rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {newArrivals.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                isWishlisted={wishlistIds.includes(product.id)}
+                onWishlist={() => toggleWishlist(product.id, isAuthenticated)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Bridal Banner */}
       <section className="relative h-[400px] overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?q=80&w=2070"
@@ -142,5 +190,37 @@ const Home = () => {
     </div>
   );
 };
+
+// --- Product Card with wishlist ---
+const ProductCard = ({ product, isWishlisted, onWishlist }) => (
+  <div className="group relative">
+    <Link to={`/product/${product.slug}`}>
+      <div className="relative overflow-hidden rounded-sm bg-[#f9f9f9] aspect-square mb-3">
+        {product.tag && (
+          <span className="absolute top-3 left-3 z-10 bg-[#832729] text-white text-[10px] font-semibold px-2 py-1 rounded-sm tracking-wide">
+            {product.tag}
+          </span>
+        )}
+        <img
+          src={product.images?.[0]?.url}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+      </div>
+      <p className="text-sm font-medium text-gray-800 group-hover:text-[#832729] transition-colors truncate">
+        {product.name}
+      </p>
+      <p className="text-sm text-gray-500 mt-1">₹ {product.price.toLocaleString('en-IN')}</p>
+    </Link>
+    <button
+      onClick={(e) => { e.preventDefault(); onWishlist(); }}
+      className="absolute top-3 right-3 z-10 p-1.5 bg-white rounded-full shadow-sm text-gray-400 hover:text-[#832729] transition-colors"
+    >
+      {isWishlisted
+        ? <FaHeart className="w-4 h-4 text-[#832729]" />
+        : <FaRegHeart className="w-4 h-4" />}
+    </button>
+  </div>
+);
 
 export default Home;
