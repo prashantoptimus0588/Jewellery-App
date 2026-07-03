@@ -6,6 +6,10 @@ const useAuthStore = create((set) => ({
   user: null,
   token: localStorage.getItem('vj_token') || null,
   isAuthenticated: !!localStorage.getItem('vj_token'),
+  
+  // ✅ 1. ADDED: App starts in a loading state to prevent premature redirects
+  isLoading: true, 
+  
   isAuthModalOpen: false,
   authMode: 'login',
   otpEmail: '',
@@ -34,7 +38,13 @@ const useAuthStore = create((set) => ({
 
   rehydrate: async () => {
     const token = localStorage.getItem('vj_token');
-    if (!token) return;
+    
+    // ✅ 2. ADDED: If there's no token, stop loading immediately
+    if (!token) {
+      set({ isLoading: false }); 
+      return;
+    }
+    
     try {
       const { user } = await getMeApi(token);
       set({ user, token, isAuthenticated: true });
@@ -44,6 +54,9 @@ const useAuthStore = create((set) => ({
     } catch {
       localStorage.removeItem('vj_token');
       set({ user: null, token: null, isAuthenticated: false });
+    } finally {
+      // ✅ 3. ADDED: No matter if the API call succeeded or failed, stop loading
+      set({ isLoading: false }); 
     }
   },
 }));
