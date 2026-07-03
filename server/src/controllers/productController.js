@@ -1,12 +1,10 @@
-// server/src/controllers/productController.js
 const prisma = require('../lib/prisma');
 
 const getProducts = async (req, res) => {
   try {
-    const { category, sub, page = 1, limit = 12, minPrice, maxPrice, metals, sort } = req.query;
+    const { category, sub, page = 1, limit = 12, minPrice, maxPrice, metals, sort, search } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Category filter
     let categoryFilter = {};
     if (sub) {
       const subCat = await prisma.category.findUnique({ where: { slug: sub } });
@@ -22,7 +20,6 @@ const getProducts = async (req, res) => {
       }
     }
 
-    // Price filter
     let priceFilter = {};
     if (minPrice != null || maxPrice != null) {
       priceFilter.price = {};
@@ -30,24 +27,42 @@ const getProducts = async (req, res) => {
       if (maxPrice != null) priceFilter.price.lte = parseInt(maxPrice);
     }
 
-    // Metal filter
     let metalFilter = {};
     if (metals) {
       const metalList = metals.split(',').map((m) => m.trim().toUpperCase().replace(' ', '_'));
       metalFilter = { metal: { in: metalList } };
     }
 
-    // Sort
+    // Search filter
+    let searchFilter = {};
+    if (search) {
+      const metalMap = {
+        'yellow gold': 'YELLOW_GOLD',
+        'rose gold': 'ROSE_GOLD',
+        'white gold': 'WHITE_GOLD',
+        'platinum': 'PLATINUM',
+      };
+      const metalValue = metalMap[search.toLowerCase().trim()];
+      searchFilter = {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { tag: { contains: search, mode: 'insensitive' } },
+          { purity: { contains: search, mode: 'insensitive' } },
+          ...(metalValue ? [{ metal: metalValue }] : []),
+        ],
+      };
+    }
+
     let orderBy = { createdAt: 'desc' };
     if (sort === 'price_asc') orderBy = { price: 'asc' };
     if (sort === 'price_desc') orderBy = { price: 'desc' };
-    if (sort === 'newest') orderBy = { createdAt: 'desc' };
 
     const where = {
       isActive: true,
       ...categoryFilter,
       ...priceFilter,
       ...metalFilter,
+      ...searchFilter,
     };
 
     const [products, total] = await Promise.all([
@@ -61,12 +76,7 @@ const getProducts = async (req, res) => {
       prisma.product.count({ where }),
     ]);
 
-    res.json({
-      products,
-      total,
-      page: parseInt(page),
-      totalPages: Math.ceil(total / parseInt(limit)),
-    });
+    res.json({ products, total, page: parseInt(page), totalPages: Math.ceil(total / parseInt(limit)) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -93,3 +103,40 @@ const getProductBySlug = async (req, res) => {
 };
 
 module.exports = { getProducts, getProductBySlug };
+
+// server/src/controllers/productController.js
+const searchProducts = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json({ products: [] });
+
+    // Map common search terms to metal enum values
+    const metalMap = {
+      'yellow gold': 'YELLOW_GOLD',
+      'rose gold': 'ROSE_GOLD',
+      'white gold': 'WHITE_GOLD',
+      'platinum': 'PLATINUM',
+    };
+    const metalValue = metalMap[q.toLowerCase().trim()];
+
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { tag: { contains: q, mode: 'insensitive' } },
+          { purity: { contains: q, mode: 'insensitive' } },
+          ...(metalValue ? [{ metal: metalValue }] : []),
+        ],
+      },
+      include: { images: { orderBy: { position: 'asc' }, take: 1 } },
+      take: 6,
+    });
+
+    res.json({ products });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Search failed' });
+  }
+};
+module.exports = { getProducts, getProductBySlug, searchProducts };

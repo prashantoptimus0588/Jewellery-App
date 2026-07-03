@@ -38,6 +38,8 @@ const ProductListing = () => {
 
   const { ids: wishlistIds, toggle: toggleWishlist } = useWishlistStore();
   const { isAuthenticated } = useAuthStore();
+  const search = searchParams.get('search') || '';
+
 
   useEffect(() => {
     const load = async () => {
@@ -46,7 +48,7 @@ const ProductListing = () => {
       try {
         const priceRange = selectedPrice != null ? PRICE_RANGES[selectedPrice] : {};
         const data = await fetchProducts({
-          category, sub,
+          category, sub,search,
           minPrice: priceRange.min,
           maxPrice: priceRange.max,
           metals: selectedMetals,
@@ -61,7 +63,7 @@ const ProductListing = () => {
       }
     };
     load();
-  }, [category, sub, selectedPrice, selectedMetals, sort]);
+  }, [category, sub, selectedPrice, selectedMetals, sort,search]);
 
   const toggleMetal = (metal) =>
     setSelectedMetals((prev) =>
@@ -75,8 +77,10 @@ const ProductListing = () => {
   };
 
   const hasActiveFilters = selectedPrice != null || selectedMetals.length > 0;
-  const pageTitle = sub || category || 'All Jewellery';
+  const pageTitle = search ? `Results for "${search}"` : sub || category || 'All Jewellery';
   const currentSortLabel = SORT_OPTIONS.find((o) => o.value === sort)?.label;
+
+
 
   return (
     <div className="container mx-auto px-6 py-8">

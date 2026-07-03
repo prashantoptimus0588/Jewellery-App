@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 // Auth
 import AuthModal from './components/auth/AuthModal';
 import AuthCallback from './pages/AuthCallback';
+import NotFound from './pages/NotFound';
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
           <Route path="checkout" element={<Checkout />} />
           <Route path="orders" element={<Orders />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
 

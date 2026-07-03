@@ -1,7 +1,7 @@
 // src/services/productService.js
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export const fetchProducts = async ({ category, sub, page = 1, limit = 12, minPrice, maxPrice, metals, sort } = {}) => {
+export const fetchProducts = async ({ category, sub, page = 1, limit = 12, minPrice, maxPrice, metals, sort, search } = {}) => {
   const params = new URLSearchParams();
   if (category) params.set('category', category);
   if (sub) params.set('sub', sub);
@@ -9,6 +9,7 @@ export const fetchProducts = async ({ category, sub, page = 1, limit = 12, minPr
   if (maxPrice != null) params.set('maxPrice', maxPrice);
   if (metals?.length) params.set('metals', metals.join(','));
   if (sort) params.set('sort', sort);
+  if (search) params.set('search', search);
   params.set('page', page);
   params.set('limit', limit);
 
@@ -23,4 +24,13 @@ export const fetchProductBySlug = async (slug) => {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Product not found');
   return data;
+};
+
+export const searchProductsApi = async (q) => {
+  const res = await fetch(
+    `${BASE}/products/search?q=${encodeURIComponent(q)}`
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Search failed');
+  return data; // { products }
 };

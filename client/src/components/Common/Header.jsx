@@ -6,6 +6,7 @@ import CartDrawer from '../cart/CartDrawer';
 import useCartStore from '../../store/useCartStore';
 import useAuthStore from '../../store/useAuthStore';
 import useWishlistStore from '../../store/useWishlistStore';
+import SearchBar from './SearchBar';
 
 const categories = [
   { name: 'All Jewellery', slug: 'all-jewellery', items: [{ label: 'New Arrivals', slug: 'new-arrivals' }, { label: 'Best Sellers', slug: 'best-sellers' }, { label: 'Gift Finder', slug: 'gift-finder' }] },
@@ -45,17 +46,8 @@ const Header = () => {
           <img className="h-14 w-36 object-contain object-left" src={brandLogo} alt="Vikas Jewellers" />
         </Link>
 
-        <div className="hidden md:flex flex-1 max-w-2xl mx-8 relative items-center">
-          <FaSearch className="absolute left-4 text-gray-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search for engagement rings"
-            className="w-full bg-[#F9F9F9] text-gray-700 rounded-md py-2.5 pl-11 pr-20 outline-none border border-gray-200 focus:border-[#832729] transition-all"
-          />
-          <div className="absolute right-4 flex gap-3 text-gray-400">
-            <FaCameraRetro className="w-4 h-4 cursor-pointer hover:text-[#832729] transition-colors" />
-            <FaMicrophoneAlt className="w-4 h-4 cursor-pointer hover:text-[#832729] transition-colors" />
-          </div>
+        <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+          <SearchBar />
         </div>
 
         {/* Action Icons */}
@@ -79,9 +71,9 @@ const Header = () => {
           {isAuthenticated ? (
             <Link to="/profile" className="hover:text-[#832729] transition-colors">
               <FaUser className="w-5 h-5" />
-              <span className="text-xs font-medium hidden md:block">
+              {/* <span className="text-xs font-medium hidden md:block">
                 {user?.name ? user.name.split(' ')[0] : 'Profile'}
-              </span>
+              </span> */}
             </Link>
             ) : (
             <button onClick={openAuthModal} className="hover:text-[#832729] transition-colors">
