@@ -2,6 +2,7 @@
 # Node.js Dependencies
 # -----------------------------
 node_modules/
+inventory/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

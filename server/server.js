@@ -7,9 +7,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
 const userRoutes = require('./src/routes/userRoutes');
-const adminProductRoutes = require('./src/routes/adminProductRoutes');
-const adminOrderRoutes = require('./src/routes/adminOrderRoutes');
-
+const adminRoutes = require('./src/routes/adminRoutes');
 
 const app = express();
 
@@ -20,15 +18,12 @@ app.use(cors({
 app.use(express.json());
 app.use(passport.initialize());
 
-
-app.use('/api/admin/products', adminProductRoutes);
-app.use('/api/admin/orders', adminOrderRoutes);
-
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

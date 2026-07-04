@@ -1,144 +1,138 @@
-// src/pages/admin/AdminOrders.jsx
+// src/pages/Admin/AdminOrders.jsx
 import React, { useEffect, useState } from 'react';
-import { fetchAdminOrders, updateOrderStatus } from '../../services/adminOrderService';
+import { FaChevronDown } from 'react-icons/fa6';
+import { fetchAdminOrders, updateOrderStatus } from '../../services/adminService';
 
-const STATUS_OPTIONS = ['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
+const STATUSES = ['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
 
-const NEXT_STATUS = {
-  PENDING: ['PAID', 'CANCELLED'],
-  PAID: ['PROCESSING', 'CANCELLED', 'REFUNDED'],
-  PROCESSING: ['SHIPPED', 'CANCELLED'],
-  SHIPPED: ['DELIVERED'],
-  DELIVERED: ['REFUNDED'],
-  CANCELLED: [],
-  REFUNDED: [],
+const statusColors = {
+  PENDING: 'bg-gray-100 text-gray-600',
+  PAID: 'bg-amber-50 text-amber-600',
+  PROCESSING: 'bg-amber-50 text-amber-600',
+  SHIPPED: 'bg-blue-50 text-blue-600',
+  DELIVERED: 'bg-green-50 text-green-600',
+  CANCELLED: 'bg-red-50 text-red-500',
+  REFUNDED: 'bg-purple-50 text-purple-600',
 };
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [updatingId, setUpdatingId] = useState(null);
-
-  const loadOrders = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await fetchAdminOrders({ page, limit: 20, status: statusFilter || undefined, search });
-      setOrders(data.orders);
-      setTotalPages(data.totalPages);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [expanded, setExpanded] = useState(null);
+  const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
-    loadOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter]);
+    fetchAdminOrders()
+      .then((data) => setOrders(data.orders))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setPage(1);
-    loadOrders();
-  };
-
-  const handleStatusChange = async (orderId, newStatus) => {
-    setUpdatingId(orderId);
+  const handleStatusChange = async (orderId, status) => {
+    setUpdating(orderId);
     try {
-      await updateOrderStatus(orderId, newStatus);
-      loadOrders();
+      await updateOrderStatus(orderId, status);
+      setOrders((prev) =>
+        prev.map((o) => o.id === orderId ? { ...o, status } : o)
+      );
     } catch (err) {
       alert(err.message);
     } finally {
-      setUpdatingId(null);
+      setUpdating(null);
     }
   };
 
   return (
     <div>
-      <h1>Orders</h1>
+      <h2 className="font-serif text-2xl text-gray-800 mb-6">Orders ({orders.length})</h2>
 
-      <div style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
-        <form onSubmit={handleSearch}>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by order ID, name, or email..."
-            style={{ width: 280 }}
-          />
-          <button type="submit">Search</button>
-        </form>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-        >
-          <option value="">All statuses</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+      {loading ? (
+        <div className="flex flex-col gap-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="animate-pulse bg-gray-100 rounded-sm h-16" />
           ))}
-        </select>
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {orders.map((order) => (
+            <div key={order.id} className="bg-white border border-gray-100 rounded-sm overflow-hidden">
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+              {/* Order Row */}
+              <div
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                onClick={() => setExpanded(expanded === order.id ? null : order.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">
+                      #{order.id.slice(-8).toUpperCase()}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {order.user?.name} · {order.user?.email}
+                    </p>
+                  </div>
+                </div>
 
-      {!loading && !error && (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-              <th>Order ID</th>
-              <th>Customer</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th>Update</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td>{o.id.slice(0, 8)}...</td>
-                <td>{o.user?.name}<br /><small>{o.user?.email}</small></td>
-                <td>{o.items?.length}</td>
-                <td>₹{o.totalAmount}</td>
-                <td>{o.status}</td>
-                <td>{new Date(o.createdAt).toLocaleDateString()}</td>
-                <td>
-                  {NEXT_STATUS[o.status]?.length > 0 ? (
-                    <select
-                      disabled={updatingId === o.id}
-                      value=""
-                      onChange={(e) => e.target.value && handleStatusChange(o.id, e.target.value)}
-                    >
-                      <option value="">Change status...</option>
-                      {NEXT_STATUS[o.status].map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span>—</span>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-sm font-medium text-gray-800">
+                    ₹ {order.totalAmount.toLocaleString('en-IN')}
+                  </span>
+
+                  {/* Status Dropdown */}
+                  <select
+                    value={order.status}
+                    onChange={(e) => { e.stopPropagation(); handleStatusChange(order.id, e.target.value); }}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={updating === order.id}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 outline-none cursor-pointer ${statusColors[order.status]}`}
+                  >
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+
+                  <span className="text-xs text-gray-400">
+                    {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                  </span>
+
+                  <FaChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${expanded === order.id ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              {/* Expanded Order Items */}
+              {expanded === order.id && (
+                <div className="border-t border-gray-100 p-4 bg-gray-50/30 flex flex-col gap-4">
+
+                  {/* Delivery Address */}
+                  {order.address && (
+                    <div className="text-xs text-gray-500">
+                      <span className="font-medium text-gray-700">Deliver to: </span>
+                      {order.address.fullName}, {order.address.line1}, {order.address.city}, {order.address.state} - {order.address.pincode}
+                    </div>
                   )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
 
-      <div style={{ marginTop: '1rem' }}>
-        <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-        <span style={{ margin: '0 1rem' }}>Page {page} of {totalPages}</span>
-        <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
-      </div>
+                  {/* Items */}
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-white rounded-sm overflow-hidden flex-shrink-0 border border-gray-100">
+                        <img src={item.product?.images[0]?.url} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-grow">
+                        <p className="text-sm font-medium text-gray-800">{item.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {item.size && `Size ${item.size} · `}Qty {item.quantity}
+                        </p>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">
+                        ₹ {(item.price * item.quantity).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -17,12 +17,11 @@ import AuthModal from './components/auth/AuthModal';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminRoute from './components/auth/AdminRoute';
-import AdminLayout from './components/layout/AdminLayout';
-import AdminOrders from './pages/admin/AdminOrders';
+import AdminLayout from './pages/Admin/AdminLayout';
+import Dashboard from './pages/Admin/Dashboard';
+import AdminProducts from './pages/Admin/AdminProducts';
+import AdminOrders from './pages/Admin/AdminOrders';
 import useAuthStore from './store/useAuthStore';
-
 
 const App = () => {
   const rehydrate = useAuthStore((state) => state.rehydrate);
@@ -45,16 +44,8 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }
-        >
-          {/* Automatically redirects from /admin to /admin/orders */}
-          <Route index element={<Navigate to="orders" replace />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
           <Route path="products" element={<AdminProducts />} />
           <Route path="orders" element={<AdminOrders />} />
         </Route>

@@ -1,24 +1,20 @@
+// server/src/middlewares/authMiddleware.js
 const { verifyToken } = require('../lib/jwt');
 
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  const token = authHeader.split(' ')[1];
   try {
-    const token = authHeader.split(' ')[1];
-    req.user = verifyToken(token);
+    const decoded = verifyToken(token);
+    req.user = decoded;
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
 
-const requireAdmin = (req, res, next) => {
-  if (req.user?.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-  next();
-};
-
-module.exports = { requireAuth, requireAdmin };
+module.exports = { requireAuth };
