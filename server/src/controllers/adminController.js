@@ -1,6 +1,8 @@
 // server/src/controllers/adminController.js
 const prisma = require('../lib/prisma');
 const cloudinary = require('../config/cloudinary');
+const embeddings = require('../ai/embeddings');
+
 
 // ---- PRODUCTS ----
 
@@ -52,10 +54,49 @@ const createProduct = async (req, res) => {
       include: { images: true },
     });
 
+    generateEmbeddingForProduct(product, category).catch(console.error);
     res.json({ product });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create product' });
+  }
+};
+
+const generateEmbeddingForProduct = async (product, category) => {
+  try {
+    const content = `
+      Product: ${product.name}
+      Category: ${category?.name || ''}
+      Description: ${product.description}
+      Price: ₹${product.price}
+      Metal: ${product.metal?.replace('_', ' ') || 'N/A'}
+      Purity: ${product.purity || 'N/A'}
+      Weight: ${product.weight || 'N/A'}
+      Tag: ${product.tag || 'N/A'}
+    `.trim();
+
+    const vector = await embeddings.embedQuery(content);
+
+    await prisma.$executeRaw`
+      INSERT INTO "ProductEmbedding" ("id", "productId", "content", "embedding", "createdAt", "updatedAt")
+      VALUES (
+        gen_random_uuid()::text,
+        ${product.id},
+        ${content},
+        ${JSON.stringify(vector)}::vector,
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT ("productId") DO UPDATE SET
+        "content" = EXCLUDED."content",
+        "embedding" = EXCLUDED."embedding",
+        "updatedAt" = NOW()
+    `;
+    console.log(`✓ Embedding generated for: ${product.name}`);
+  } catch (err) {
+    console.error(`✗ Embedding failed for: ${product.name}`, err.message);
+    // Don't throw — product creation should still succeed even if embedding fails
   }
 };
 
@@ -78,8 +119,9 @@ const updateProduct = async (req, res) => {
     };
 
     if (categorySlug) {
-      const category = await prisma.category.findUnique({ where: { slug: categorySlug } });
-      if (category) data.categoryId = category.id;
+      // FIX 1: Renamed variable to 'foundCategory' to avoid any naming confusion
+      const foundCategory = await prisma.category.findUnique({ where: { slug: categorySlug } });
+      if (foundCategory) data.categoryId = foundCategory.id;
     }
 
     if (name) {
@@ -89,6 +131,8 @@ const updateProduct = async (req, res) => {
     const product = await prisma.product.update({
       where: { id },
       data,
+      // FIX 2: Tell Prisma to fetch the category data alongside the updated product
+      include: { category: true } 
     });
 
     // Add new images if uploaded
@@ -103,6 +147,8 @@ const updateProduct = async (req, res) => {
       });
     }
 
+    // FIX 3: Pass 'product.category' instead of just 'category'
+    generateEmbeddingForProduct(product, product.category).catch(console.error);
     res.json({ product });
   } catch (err) {
     console.error(err);
