@@ -4,7 +4,7 @@ const { searchSimilarProducts } = require('./vectorStore');
 const { getHistory, saveHistory } = require('./chatMemory');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 // const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
 
 const SYSTEM_PROMPT = `You are a helpful and friendly jewellery assistant for Vikas Jewellers, a premium Indian jewellery store based in Jaipur. 
