@@ -84,8 +84,8 @@ const Footer = () => {
           {/* Column 4: Contact */}
           <div>
             <h3 className="text-xl font-serif mb-4">Contact Us</h3>
-            <p className="text-sm text-gray-300 mb-1">📍 123, Jewellers Lane, Jaipur, Rajasthan</p>
-            <p className="text-sm text-gray-300 mb-6">📞 +91 98765 43210</p>
+            <p className="text-sm text-gray-300 mb-1">📍 99/A3 Anna Chauraha, Kanpur, UttarPradesh</p>
+            <p className="text-sm text-gray-300 mb-6">📞 +91 1234567890</p>
 
             <h3 className="text-xl font-serif mb-4">Chat With Us</h3>
             <p className="text-sm text-gray-300 mb-4">Available 9AM – 9PM, Mon–Sat</p>
