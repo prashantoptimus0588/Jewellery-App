@@ -1,6 +1,6 @@
 // server/src/ai/vectorStore.js
-const prisma = require('../lib/prisma');
-const embeddings = require('./embeddings');
+const prisma = require("../lib/prisma");
+const embeddings = require("./embeddings");
 // Search for similar products using cosine similarity
 const searchSimilarProducts = async (query, topK = 3) => {
   // Embed the query
@@ -8,19 +8,21 @@ const searchSimilarProducts = async (query, topK = 3) => {
   queryVector = queryVector.slice(0, 768);
 
   // Raw SQL cosine similarity search using pgvector
+  // In vectorStore.js, update the SQL query to include image:
   const results = await prisma.$queryRaw`
-    SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.price,
-      p.purity,
-      p.weight,
-      p.metal,
-      p.tag,
-      p.slug,
-      pe.content,
-      1 - (pe.embedding <=> ${JSON.stringify(queryVector)}::vector) as similarity
+  SELECT 
+    p.id,
+    p.name,
+    p.description,
+    p.price,
+    p.purity,
+    p.weight,
+    p.metal,
+    p.tag,
+    p.slug,
+    pe.content,
+    (SELECT url FROM "ProductImage" WHERE "productId" = p.id ORDER BY position ASC LIMIT 1) as image,
+    1 - (pe.embedding <=> ${JSON.stringify(queryVector)}::vector) as similarity
     FROM "ProductEmbedding" pe
     JOIN "Product" p ON p.id = pe."productId"
     WHERE p."isActive" = true
