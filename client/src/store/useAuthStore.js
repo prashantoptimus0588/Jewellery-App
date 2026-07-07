@@ -1,6 +1,7 @@
 // src/store/useAuthStore.js
 import { create } from 'zustand';
 import { getMeApi } from '../services/authService';
+import useWishlistStore from './useWishlistStore';
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -23,16 +24,12 @@ const useAuthStore = create((set) => ({
     localStorage.setItem('vj_token', token);
     set({ user: userData, token, isAuthenticated: true, isAuthModalOpen: false, otpEmail: '' });
     // Load wishlist from DB on login
-    import('../store/useWishlistStore').then(({ default: useWishlistStore }) => {
-      useWishlistStore.getState().load();
-    });
+    useWishlistStore.getState().load();
   },
 
   logout: () => {
     localStorage.removeItem('vj_token');
-    import('../store/useWishlistStore').then(({ default: useWishlistStore }) => {
-      useWishlistStore.getState().clear();
-    });
+    useWishlistStore.getState().load();
     set({ user: null, token: null, isAuthenticated: false });
   },
 
@@ -49,7 +46,6 @@ const useAuthStore = create((set) => ({
       const { user } = await getMeApi(token);
       set({ user, token, isAuthenticated: true });
       // Load wishlist on rehydrate too
-      const { default: useWishlistStore } = await import('../store/useWishlistStore');
       useWishlistStore.getState().load();
     } catch {
       localStorage.removeItem('vj_token');
