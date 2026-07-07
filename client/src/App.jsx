@@ -17,10 +17,10 @@ import AuthModal from './components/auth/AuthModal';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 
-import AdminLayout from './pages/Admin/AdminLayout';
-import Dashboard from './pages/Admin/Dashboard';
-import AdminProducts from './pages/Admin/AdminProducts';
-import AdminOrders from './pages/Admin/AdminOrders';
+import AdminLayout from './pages/admin/AdminLayout';
+import Dashboard from './pages/admin/Dashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminOrders from './pages/admin/AdminOrders';
 import useAuthStore from './store/useAuthStore';
 
 const App = () => {
