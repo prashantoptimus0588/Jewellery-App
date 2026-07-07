@@ -14,3 +14,5 @@ const GoogleButton = ( { onClick } ) => {
     </button>
   );
 };
+
+export default GoogleButton;
