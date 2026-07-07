@@ -1,4 +1,6 @@
-const GoogleButton = ( { onClick } ) => {
+import { FaGoogle } from 'react-icons/fa6';
+
+const GoogleButton = ({ onClick }) => {
   const handleClick = () => {
     if (onClick) return onClick();
     window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/google`;
