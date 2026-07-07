@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from '../common/Header';
 import Footer from '../common/Footer';
-import ChatWindow from '../chatbot/ChatWindow';
+import ChatWindow from '../chatBot/ChatWindow';
 
 const UserLayout = () => {
   const [chatOpen, setChatOpen] = useState(false);
