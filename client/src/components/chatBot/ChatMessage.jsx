@@ -34,11 +34,13 @@ const ChatMessage = ({ message }) => {
                 to={`/product/${product.slug}`}
                 className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-2.5 hover:border-[#832729]/30 transition-colors shadow-sm"
               >
-                <img
-                    src={product.image || 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=100'}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                />
+                <div className="w-14 h-14 flex-shrink-0 rounded-md overflow-hidden bg-gray-50">
+                  <img
+                      src={product.image || 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=100'}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="flex-grow min-w-0">
                   <p className="text-xs font-medium text-gray-800 truncate">{product.name}</p>
                   <p className="text-xs text-[#832729] font-semibold">
