@@ -4,8 +4,13 @@ const { searchSimilarProducts } = require('./vectorStore');
 const { getHistory, saveHistory } = require('./chatMemory');
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
-// const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
+
+// Use the stable model, not the -preview variant. Preview/experimental
+// models carry much tighter free-tier daily quotas (we hit a 20 req/day
+// cap on gemini-3-flash-preview vs ~1,500/day on the stable release).
+// const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
+// const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
 
 const SYSTEM_PROMPT = `You are a helpful and friendly jewellery assistant for Vikas Jewellers, a premium Indian jewellery store. 
 
@@ -25,8 +30,13 @@ Store details:
 - Speciality: 22K Gold, Diamond, Bridal jewellery
 - Trust: BIS Hallmarked, Lifetime Exchange, Free Insured Shipping`;
 
+const FALLBACK_MESSAGE =
+  "I am having trouble processing that request right now. How else can I help you with our jewellery collection?";
+
+const BUSY_MESSAGE =
+  "We're getting a lot of questions right now — please try again in a moment 🙏";
+
 const buildPrompt = (userMessage, relevantProducts, chatHistory) => {
-  // Format relevant products as context
   const productContext = relevantProducts.length > 0
     ? `\nRelevant products from our catalog:\n${relevantProducts.map((p, i) => `
 ${i + 1}. ${p.name}
@@ -40,7 +50,6 @@ ${i + 1}. ${p.name}
 `).join('\n')}`
     : '\nNo specific products found for this query. Suggest browsing categories.';
 
-  // Format chat history
   const historyText = chatHistory.length > 0
     ? `\nPrevious conversation:\n${chatHistory.map(m => `${m.role === 'user' ? 'Customer' : 'Assistant'}: ${m.content}`).join('\n')}`
     : '';
@@ -54,47 +63,61 @@ Assistant:`;
 };
 
 const chat = async (sessionId, userMessage) => {
-  // 1. Get chat history from Redis
-  const history = await getHistory(sessionId);
+  const t0 = performance.now();
 
-  // 2. Fetch products from vector store (FIXED: Added this missing database fetch step)
-  const rawProducts = await searchSimilarProducts(userMessage) || [];
-  
-  // Filter out low similarity results — below 0.65 means not relevant enough
-  // (FIXED: Uses rawProducts array to filter into relevantProducts)
-  const relevantProducts = rawProducts.filter(p => Number(p.similarity) >= 0.65);
+  // History (Redis) and product search (embedding + pgvector) are
+  // independent of each other — run them in parallel instead of
+  // sequentially. If the product search fails for any reason, fall back
+  // to an empty list rather than failing the whole chat.
+  const [history, rawProducts] = await Promise.all([
+    getHistory(sessionId),
+    searchSimilarProducts(userMessage).catch((err) => {
+      console.error('[ragChain] searchSimilarProducts failed:', err.message);
+      return [];
+    }),
+  ]);
 
-  // 3. Build prompt
+  const relevantProducts = rawProducts.filter((p) => Number(p.similarity) >= 0.65);
   const prompt = buildPrompt(userMessage, relevantProducts, history);
 
-  // 4. Generate response
-  const result = await model.generateContent(prompt);
-  
-  // (FIXED: Added safety fallback in case Gemini blocks the prompt)
-  const response = result.response && typeof result.response.text === 'function' 
-    ? result.response.text() 
-    : "I am having trouble processing that request right now. How else can I help you with our jewellery collection?";
+  const mappedProducts = relevantProducts.map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: Number(p.price),
+    slug: p.slug,
+    image: p.image || null,
+    similarity: Number(p.similarity),
+  }));
 
-  // 5. Update history with sliding window
+  let response;
+  try {
+    const genStart = performance.now();
+    const result = await model.generateContent(prompt);
+    console.log(`[timing] gemini generateContent: ${(performance.now() - genStart).toFixed(0)}ms`);
+
+    response = result.response && typeof result.response.text === 'function'
+      ? result.response.text()
+      : FALLBACK_MESSAGE;
+  } catch (err) {
+    const isRateLimited = err.message?.includes('429') || err.message?.includes('Too Many Requests');
+    console.error('[ragChain] generateContent failed:', err.message);
+    response = isRateLimited ? BUSY_MESSAGE : FALLBACK_MESSAGE;
+  }
+
+  // Don't make the customer wait on the Redis write — they already have
+  // their answer. Save history in the background and just log failures.
   const updatedHistory = [
     ...history,
     { role: 'user', content: userMessage },
     { role: 'assistant', content: response },
   ];
-  await saveHistory(sessionId, updatedHistory);
+  saveHistory(sessionId, updatedHistory).catch((err) =>
+    console.error('[ragChain] saveHistory failed:', err.message)
+  );
 
-  // 6. Return response + relevant products for frontend cards
-  return {
-    response,
-    products: relevantProducts.map((p) => ({
-      id: p.id,
-      name: p.name,
-      price: Number(p.price),
-      slug: p.slug,
-      image: p.image || null,
-      similarity: Number(p.similarity),
-    })),
-  };
+  console.log(`[timing] TOTAL chat(): ${(performance.now() - t0).toFixed(0)}ms`);
+
+  return { response, products: mappedProducts };
 };
 
 module.exports = { chat };
