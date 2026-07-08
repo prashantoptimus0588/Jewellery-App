@@ -25,14 +25,11 @@ async function generateProductEmbeddings() {
     `.trim();
 
     try {
-      // 1. Generate the raw embedding vector using the native Google SDK
-      const result = await embeddings.embedContent(content);
-      let vector = result.embedding.values;
+      // embeddings.embedQuery() already returns the sliced 768-dim vector
+      // directly — no need to reach into .embedding.values or slice again.
+      const vector = await embeddings.embedQuery(content);
 
-      // 2. Slice the array down to exactly 768 dimensions to fit the DB schema
-      vector = vector.slice(0, 768);
-
-      // 3. Store in DB using raw SQL (pgvector)
+      // Store in DB using raw SQL (pgvector)
       await prisma.$executeRaw`
         INSERT INTO "ProductEmbedding" ("id", "productId", "content", "embedding", "createdAt", "updatedAt")
         VALUES (
@@ -53,6 +50,11 @@ async function generateProductEmbeddings() {
     } catch (err) {
       console.error(`✗ Failed: ${product.name}`, err.message);
     }
+
+    // Stay under free-tier per-minute rate limits when embedding in bulk.
+    // Placed outside the try/catch so it still applies even after a
+    // failure — a failed call still counted against the API's rate limit.
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   console.log('Done generating embeddings.');
