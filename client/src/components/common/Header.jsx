@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaSearch, FaCameraRetro, FaMicrophoneAlt, FaCartPlus, FaStar, FaUser, FaHeart } from "react-icons/fa";
+import { FaCartPlus, FaUser, FaHeart, FaBars, FaTimes, FaSearch } from "react-icons/fa";
 import brandLogo from '../../assets/VJ Logo.png';
 import CartDrawer from '../cart/CartDrawer';
 import useCartStore from '../../store/useCartStore';
@@ -9,52 +9,61 @@ import useWishlistStore from '../../store/useWishlistStore';
 import SearchBar from './SearchBar';
 
 const categories = [
-  { name: 'All Jewellery', slug: 'all-jewellery', items: [{ label: 'New Arrivals', slug: 'new-arrivals' }, { label: 'Best Sellers', slug: 'best-sellers' }, { label: 'Gift Finder', slug: 'gift-finder' }] },
-  { name: 'Gold', slug: 'gold', items: [{ label: 'Gold Rings', slug: 'gold-rings' }, { label: 'Gold Chains', slug: 'gold-chains' }, { label: 'Gold Bangles', slug: 'gold-bangles' }, { label: 'Gold Earrings', slug: 'gold-earrings' }] },
-  { name: 'Diamond', slug: 'diamond', items: [{ label: 'Diamond Rings', slug: 'diamond-rings' }, { label: 'Diamond Earrings', slug: 'diamond-earrings' }, { label: 'Diamond Pendants', slug: 'diamond-pendants' }] },
-  { name: 'Earrings', slug: 'earrings', items: [{ label: 'Studs', slug: 'studs' }, { label: 'Hoops', slug: 'hoops' }, { label: 'Jhumkas', slug: 'jhumkas' }, { label: 'Drop Earrings', slug: 'drop-earrings' }] },
-  { name: 'Rings', slug: 'rings', items: [{ label: 'Engagement Rings', slug: 'engagement-rings' }, { label: 'Couple Rings', slug: 'couple-rings' }, { label: 'Cocktail Rings', slug: 'cocktail-rings' }] },
-  { name: 'Daily Wear', slug: 'daily-wear', items: [{ label: 'Lightweight Gold', slug: 'lightweight-gold' }, { label: 'Minimal Studs', slug: 'minimal-studs' }, { label: 'Everyday Chains', slug: 'everyday-chains' }] },
-  { name: 'Wedding', slug: 'wedding', items: [{ label: 'Bridal Sets', slug: 'bridal-sets' }, { label: 'Mangalsutra', slug: 'mangalsutra' }, { label: 'Wedding Bands', slug: 'wedding-bands' }] },
-  { name: 'Gifting', slug: 'gifting', items: [{ label: 'Under ₹10,000', slug: 'under-10000' }, { label: 'Anniversary Gifts', slug: 'anniversary-gifts' }, { label: 'Gift Cards', slug: 'gift-cards' }] },
+  { name: 'All Jewellery', slug: 'all-jewellery' },
+  { name: 'Gold', slug: 'gold' },
+  { name: 'Diamond', slug: 'diamond' },
+  { name: 'Earrings', slug: 'earrings' },
+  { name: 'Rings', slug: 'rings' },
+  { name: 'Daily Wear', slug: 'daily-wear' },
+  { name: 'Wedding', slug: 'wedding' },
+  { name: 'Gifting', slug: 'gifting' },
 ];
 
 const Header = () => {
   const [cartOpen, setCartOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const leaveTimer = useRef(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   const totalItems = useCartStore((s) => s.totalItems());
-  const { openAuthModal, isAuthenticated, user } = useAuthStore();
+  const { openAuthModal, isAuthenticated } = useAuthStore();
   const { ids: wishlistIds } = useWishlistStore();
 
-  const handleMouseEnter = (catName) => {
-    clearTimeout(leaveTimer.current);
-    setActiveCategory(catName);
-  };
-
-  const handleMouseLeave = () => {
-    leaveTimer.current = setTimeout(() => setActiveCategory(null), 150);
-  };
+  const categoryPath = (cat) =>
+    cat.slug === 'all-jewellery' ? '/products' : `/products?category=${cat.slug}`;
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-
       {/* Top Utility Bar */}
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-3">
+
+        {/* Hamburger — mobile only */}
+        <button
+          className="md:hidden text-gray-700 p-1 -ml-1"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+        >
+          <FaBars className="w-5 h-5" />
+        </button>
 
         <Link to="/" className="flex items-center flex-shrink-0">
-          <img className="h-14 w-36 object-contain object-left" src={brandLogo} alt="Vikas Jewellers" />
+          <img className="h-10 md:h-14 w-auto max-w-[140px] object-contain" src={brandLogo} alt="Vikas Jewellers" />
         </Link>
 
+        {/* Search — desktop inline */}
         <div className="hidden md:flex flex-1 max-w-2xl mx-8">
           <SearchBar />
         </div>
 
         {/* Action Icons */}
-        <div className="flex items-center gap-6 text-gray-600">
+        <div className="flex items-center gap-4 md:gap-6 text-gray-600">
 
-          <button className="hover:text-[#832729] transition-colors">
-            <FaStar className="w-5 h-5" />
+          {/* Search — mobile toggle */}
+          <button
+            className="md:hidden hover:text-[#832729] transition-colors"
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            aria-label="Search"
+          >
+            <FaSearch className="w-[18px] h-[18px]" />
           </button>
 
           {/* Wishlist */}
@@ -71,11 +80,8 @@ const Header = () => {
           {isAuthenticated ? (
             <Link to="/profile" className="hover:text-[#832729] transition-colors">
               <FaUser className="w-5 h-5" />
-              {/* <span className="text-xs font-medium hidden md:block">
-                {user?.name ? user.name.split(' ')[0] : 'Profile'}
-              </span> */}
             </Link>
-            ) : (
+          ) : (
             <button onClick={openAuthModal} className="hover:text-[#832729] transition-colors">
               <FaUser className="w-5 h-5" />
             </button>
@@ -93,20 +99,22 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Category Nav */}
-      <nav className="border-t border-gray-100 relative">
+      {/* Mobile search bar — expands under top row */}
+      {mobileSearchOpen && (
+        <div className="md:hidden px-4 pb-3">
+          <SearchBar />
+        </div>
+      )}
+
+      {/* Category Nav — desktop only, plain links, no hover dropdown */}
+      <nav className="hidden md:block border-t border-gray-100">
         <div className="container mx-auto px-6 py-3">
           <ul className="flex items-center justify-center gap-10 text-[15px] font-medium text-gray-700 whitespace-nowrap overflow-x-auto">
             {categories.map((cat) => (
-              <li
-                key={cat.name}
-                onMouseEnter={() => handleMouseEnter(cat.name)}
-                onMouseLeave={handleMouseLeave}
-                className="relative"
-              >
+              <li key={cat.name}>
                 <Link
-                  to={cat.slug === 'all-jewellery' ? '/products' : `/products?category=${cat.slug}`}
-                  className={`hover:text-[#832729] cursor-pointer transition-colors ${activeCategory === cat.name ? 'text-[#832729]' : ''}`}
+                  to={categoryPath(cat)}
+                  className="hover:text-[#832729] transition-colors"
                 >
                   {cat.name}
                 </Link>
@@ -114,31 +122,44 @@ const Header = () => {
             ))}
           </ul>
         </div>
-
-        {/* Dropdown — also has mouse handlers to keep it open */}
-        {activeCategory && (
-          <div
-            onMouseEnter={() => handleMouseEnter(activeCategory)}
-            onMouseLeave={handleMouseLeave}
-            className="absolute left-0 right-0 top-full bg-white border-t border-gray-100 shadow-lg z-40"
-          >
-            <div className="container mx-auto px-6 py-6 flex justify-center gap-12 flex-wrap">
-              {categories
-                .find((c) => c.name === activeCategory)
-                ?.items.map((sub) => (
-                  <Link
-                    key={sub.slug}
-                    to={`/products?category=${categories.find(c => c.name === activeCategory)?.slug}&sub=${sub.slug}`}
-                    className="text-sm text-gray-600 hover:text-[#832729] transition-colors"
-                    onClick={() => setActiveCategory(null)}
-                  >
-                    {sub.label}
-                  </Link>
-                ))}
-            </div>
-          </div>
-        )}
       </nav>
+
+      {/* Mobile slide-out menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Panel */}
+          <div className="absolute left-0 top-0 h-full w-[80%] max-w-xs bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+              <img className="h-9 w-auto object-contain" src={brandLogo} alt="Vikas Jewellers" />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="text-gray-500 p-1"
+                aria-label="Close menu"
+              >
+                <FaTimes className="w-5 h-5" />
+              </button>
+            </div>
+            <ul className="flex-1 overflow-y-auto py-2">
+              {categories.map((cat) => (
+                <li key={cat.name}>
+                  <Link
+                    to={categoryPath(cat)}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-5 py-3 text-[15px] font-medium text-gray-700 hover:text-[#832729] hover:bg-gray-50 transition-colors"
+                  >
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </header>
