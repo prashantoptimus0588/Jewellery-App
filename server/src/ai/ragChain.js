@@ -24,6 +24,7 @@ Your role:
 - If no relevant products are found, suggest visiting the store or browsing categories
 - Never make up products that aren't in the context
 - Keep responses concise and helpful
+- Respond in plain conversational text only — do not use markdown formatting such as **bold**, *italics*, bullet points, or headings
 
 Store details:
 - Location: Jaipur, Rajasthan (and store branch in Kanpur, Uttar Pradesh)
@@ -35,6 +36,18 @@ const FALLBACK_MESSAGE =
 
 const BUSY_MESSAGE =
   "We're getting a lot of questions right now — please try again in a moment 🙏";
+
+// Gemini tends to format responses with markdown even when asked not to.
+// Strip it so the chat bubble shows clean plain text instead of raw ** and #.
+const stripMarkdown = (text) =>
+  text
+    .replace(/\*\*(.*?)\*\*/g, '$1')   // **bold** -> bold
+    .replace(/\*(.*?)\*/g, '$1')       // *italic* -> italic
+    .replace(/__(.*?)__/g, '$1')       // __bold__ -> bold
+    .replace(/`(.*?)`/g, '$1')         // `code` -> code
+    .replace(/^#{1,6}\s+/gm, '')       // # Heading -> Heading
+    .replace(/^[-*+]\s+/gm, '')        // - bullet -> bullet
+    .trim();
 
 const buildPrompt = (userMessage, relevantProducts, chatHistory) => {
   const productContext = relevantProducts.length > 0
@@ -96,7 +109,7 @@ const chat = async (sessionId, userMessage) => {
     console.log(`[timing] gemini generateContent: ${(performance.now() - genStart).toFixed(0)}ms`);
 
     response = result.response && typeof result.response.text === 'function'
-      ? result.response.text()
+      ? stripMarkdown(result.response.text())
       : FALLBACK_MESSAGE;
   } catch (err) {
     const isRateLimited = err.message?.includes('429') || err.message?.includes('Too Many Requests');
