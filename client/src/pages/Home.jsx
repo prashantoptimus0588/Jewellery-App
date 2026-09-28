@@ -9,9 +9,9 @@ import useAuthStore from '../store/useAuthStore';
 
 // --- Static Data (categories use real slugs, images stay static) ---
 const categories = [
-  { name: 'Rings', slug: 'rings', image: 'https://images.unsplash.com/photo-1605100804763-247f67b2548e?q=80&w=800' },
+  { name: 'Rings', slug: 'rings', image: 'https://www.image2url.com/r2/default/images/1790622731361-00c78980-c9c4-40be-a789-e0a4be9e71c1.jpg' },
   { name: 'Earrings', slug: 'earrings', image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=800' },
-  { name: 'Necklaces', slug: 'diamond', image: 'https://images.unsplash.com/photo-1599643478524-fb66f7ca066b?q=80&w=800' },
+  { name: 'Necklaces', slug: 'diamond', image: 'https://www.image2url.com/r2/default/images/1790622877261-4aa37754-701a-47fd-ab0b-ad7b99f5ae20.webp' },
   { name: 'Bangles', slug: 'gold', image: 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=800' },
 ];
 
