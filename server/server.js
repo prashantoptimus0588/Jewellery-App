@@ -9,7 +9,7 @@ const orderRoutes = require('./src/routes/orderRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const chatRoutes = require('./src/routes/chatRoutes');
-
+const { expireStaleOrders } = require('./src/controllers/orderController');
 const app = express();
 
 app.use(cors({
@@ -30,3 +30,10 @@ app.use('/api/chat', chatRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Release stock held by unpaid orders whose 15-minute reservation expired
+setInterval(() => {
+  expireStaleOrders().catch((err) =>
+    console.error('expireStaleOrders failed:', err)
+  );
+}, 60 * 1000);

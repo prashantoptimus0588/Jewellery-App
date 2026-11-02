@@ -224,10 +224,16 @@ model Order {
   paymentId     String?     // gateway reference, e.g. Razorpay payment id
   paymentMethod String?
 
+  // When a PENDING order's stock reservation runs out (set at checkout start,
+  // cleared when paid). Unpaid orders past this time are cancelled and their
+  // stock is put back.
+  expiresAt     DateTime?
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@index([userId])
+  @@index([status, expiresAt])
 }
 
 model OrderItem {

@@ -5,6 +5,7 @@ const { requireAuth } = require('../middlewares/authMiddleware');
 const {
   createRazorpayOrder,
   verifyPayment,
+  cancelOrder,
   getOrders,
   saveAddress,
   getAddresses,
@@ -14,6 +15,7 @@ router.use(requireAuth); // all order routes require auth
 
 router.post('/create-razorpay-order', createRazorpayOrder);
 router.post('/verify-payment', verifyPayment);
+router.post('/cancel', cancelOrder); // NEW: release reserved stock when the user closes the payment popup
 router.get('/', getOrders);
 router.post('/address', saveAddress);
 router.get('/addresses', getAddresses);
