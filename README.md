@@ -41,7 +41,7 @@ Most e-commerce projects are CRUD apps. This one has two things most don't:
 ### AI / GenAI
 | Technology | Purpose |
 |---|---|
-| Google Gemini Flash (`gemini-1.5-flash`) | LLM for response generation |
+| Google Gemini Flash (`gemini-3.1 flash-lite`) | LLM for response generation |
 | `gemini-embedding-001` | Text embeddings (768-dim via MRL) |
 | pgvector (cosine similarity) | Semantic product retrieval |
 | Upstash Redis | Sliding window chat memory (last 6 messages, 1hr TTL) |
