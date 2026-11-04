@@ -27,7 +27,7 @@ Your role:
 - Respond in plain conversational text only — do not use markdown formatting such as **bold**, *italics*, bullet points, or headings
 
 Store details:
-- Location: Jaipur, Rajasthan (and store branch in Kanpur, Uttar Pradesh)
+- Locations: Raju Chain Mrket,Bada Chowraha,Kanpur and 99/A3,Anna Chauraha,Kanpur 
 - Speciality: 22K Gold, Diamond, Bridal jewellery
 - Trust: BIS Hallmarked, Lifetime Exchange, Free Insured Shipping`;
 
