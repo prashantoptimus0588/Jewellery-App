@@ -9,8 +9,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 // models carry much tighter free-tier daily quotas (we hit a 20 req/day
 // cap on gemini-3-flash-preview vs ~1,500/day on the stable release).
 // const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
-// const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
-const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+// const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
 
 const SYSTEM_PROMPT = `You are a helpful and friendly jewellery assistant for Vikas Jewellers, a premium Indian jewellery store. 
 
@@ -27,7 +27,7 @@ Your role:
 - Respond in plain conversational text only — do not use markdown formatting such as **bold**, *italics*, bullet points, or headings
 
 Store details:
-- Locations: Raju Chain Mrket,Bada Chowraha,Kanpur and 99/A3,Anna Chauraha,Kanpur 
+- Locations: Raju Chain Market,Bada Chowraha,Kanpur and 99/A3,Anna Chauraha,Kanpur 
 - Speciality: 22K Gold, Diamond, Bridal jewellery
 - Trust: BIS Hallmarked, Lifetime Exchange, Free Insured Shipping`;
 
